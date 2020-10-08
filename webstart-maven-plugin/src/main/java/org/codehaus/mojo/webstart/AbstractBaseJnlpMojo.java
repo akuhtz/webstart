@@ -239,6 +239,16 @@ public abstract class AbstractBaseJnlpMojo
     @Parameter( property = "jnlp.useUniqueVersions", defaultValue = "false" )
     private boolean useUniqueVersions;
 
+
+    /**
+     * When set to {@code lazy} or {@code eager} this causes that a download attribute is added
+     * in each of the jar resource elements in the generated JNLP file. 
+     *
+     * @since 1.0.0
+     */
+    @Parameter( defaultValue = "" )
+    private String outputDownload;
+    
     // ----------------------------------------------------------------------
     // Components
     // ----------------------------------------------------------------------
@@ -775,6 +785,11 @@ public abstract class AbstractBaseJnlpMojo
     protected Pack200Tool getPack200Tool()
     {
         return pack200Tool;
+    }
+
+    protected String getOutputDownload() 
+    {
+        return this.outputDownload;
     }
 
     /**

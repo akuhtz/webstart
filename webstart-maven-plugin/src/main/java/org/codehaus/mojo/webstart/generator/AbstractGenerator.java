@@ -26,7 +26,7 @@ import org.apache.maven.shared.utils.StringUtils;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.log.NullLogSystem;
+import org.apache.velocity.runtime.log.NullLogChute;
 import org.codehaus.plexus.util.WriterFactory;
 
 import java.io.Writer;
@@ -79,7 +79,7 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
 
             initVelocity( props );
 
-            if ( !engine.templateExists( inputFileTemplatePath ) )
+            if ( !engine.resourceExists( inputFileTemplatePath ) )
             {
                 log.warn( "Warning, template not found. Will probably fail." );
             }
@@ -103,7 +103,7 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
 
             initVelocity( props );
             
-            if ( !engine.templateExists( inputFileTemplatePath ) )
+            if ( !engine.resourceExists( inputFileTemplatePath ) )
             {
                 log.error( "Inbuilt template not found!! " + config.getDefaultTemplateResourceName() +
                                    " Will probably fail." );
@@ -122,13 +122,17 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
             throw iae;
         }
     }
+    
+    protected Log getLog() {
+    	return this.log;
+    }
 
     private void initVelocity( Properties props )
     {
         try
         {
             engine = new VelocityEngine();
-            engine.setProperty( "runtime.log.logsystem", new NullLogSystem() );
+            engine.setProperty( "runtime.log.logsystem", new NullLogChute() );
             engine.init( props );
         }
         catch ( Exception e )
@@ -182,6 +186,13 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
     protected abstract String getDependenciesText();
 
     /**
+     * Subclasses must implement this method to return the text that should 
+     * replace the $dependenciesNativeWin32 placeholder in the JNLP template.
+     * @return The dependencies text, never null.
+     */
+    protected abstract String getDependenciesNativeWin32Text( );
+    
+    /**
      * Creates a Velocity context and populates it with replacement values
      * for our pre-defined placeholders.
      *
@@ -192,7 +203,8 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
         VelocityContext context = new VelocityContext();
 
         context.put( "dependencies", getDependenciesText() );
-
+        context.put( "dependenciesNativeWin32", getDependenciesNativeWin32Text() );
+        
         context.put( "arguments", getArgumentsText() );
 
         // Note: properties that contain dots will not be properly parsed by Velocity. 

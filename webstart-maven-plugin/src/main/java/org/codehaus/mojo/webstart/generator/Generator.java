@@ -55,6 +55,13 @@ public class Generator
     }
 
     @Override
+    protected String getDependenciesNativeWin32Text()
+    {
+        //get the native win32 dependencies
+        return "";
+    }
+    
+    @Override
     protected VelocityContext createAndPopulateContext()
     {
         VelocityContext context = super.createAndPopulateContext();

@@ -168,6 +168,16 @@ public class JnlpDownloadServletMojo
         {
             verboseLog( "prepare jnlp " + jnlpFile );
 
+            if ( getOutputDownload() != null && getOutputDownload().length() > 0 ) 
+            {
+                
+                for ( JarResource jarResource : jnlpFile.getJarResources() ) 
+                {
+                	 verboseLog( "Set the output download to '" + getOutputDownload() + "' on jarResource: " + jarResource );
+                    jarResource.setOutputDownload( getOutputDownload() );
+                }
+            }
+            
             // resolve jar resources of the jnpl file
             Set<ResolvedJarResource> resolvedJarResources =
                     resolveJarResources( jnlpFile.getJarResources(), resolvedCommonJarResources );
@@ -555,6 +565,7 @@ public class JnlpDownloadServletMojo
     private void generateJnlpFile( ResolvedJnlpFile jnlpFile, String libPath )
             throws MojoExecutionException
     {
+        getLog().info( "Generate the jnlp file: " + jnlpFile.getOutputFilename() );
 
         File jnlpOutputFile = new File( getWorkDirectory(), jnlpFile.getOutputFilename() );
 

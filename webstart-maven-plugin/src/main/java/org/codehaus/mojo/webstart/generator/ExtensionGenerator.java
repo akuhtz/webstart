@@ -62,4 +62,10 @@ public class ExtensionGenerator
         return indentText( 4, Generator.getDependenciesText( getExtraConfig(), dependencies ) );
     }
 
+    @Override
+    protected String getDependenciesNativeWin32Text()
+    {
+        //get the native win32 dependencies
+        return "";
+    }
 }

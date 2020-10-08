@@ -20,6 +20,7 @@ package org.codehaus.mojo.webstart;
  */
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.plugin.logging.SystemStreamLog;
 
 /**
  * This class represents a &lt;jarResource&gt; configuration element from the
@@ -54,6 +55,12 @@ public class JarResource
      * The hrefValue to fill in JarResource file.
      */
     private String hrefValue;
+
+    /**
+     * Add the download attribute to the jar resource element.
+     * Supported values: {@code lazy} or {@code eager}
+     */
+    private String outputDownload = "";
 
     /**
      * Returns the value of the artifactId field.
@@ -174,13 +181,51 @@ public class JarResource
         return hrefValue;
     }
 
+    protected void setOutputDownload(String outputDownload) {
+        if (outputDownload != null) {
+            if (("lazy".equals(outputDownload)) || ("eager".equals(outputDownload))) {
+                this.outputDownload = outputDownload;
+            }
+            else {
+            	new SystemStreamLog().warn( "Ignore illegal download attribute '"+outputDownload+"' for resource: " + getGroupId()+":"+getArtifactId() );
+                this.outputDownload = null;
+            }
+        }
+        else {
+            this.outputDownload = null;
+        }
+    }
+    
+    
+    public boolean isOutputDownload() {
+        return this.outputDownload != null && (this.outputDownload.length() > 0);
+    }
+    
+    public String getOutputDownload() {
+        return this.outputDownload;
+    }
+    
     /**
      * {@inheritDoc}
      */
     public String toString()
     {
-        return "JarResource[ groupId='" + this.groupId + "', artifactId='" + this.artifactId + "', version='" +
-                this.version + "', classifier='" + this.classifier + "', mainClass='" + this.mainClass +
-                "', outputJarVersion='" + this.outputJarVersion + "' ]";
+        StringBuilder sb = new StringBuilder();
+        sb.append( "JarResource[ groupId='")
+            .append( this.groupId )
+            .append( "', artifactId='")
+            .append( this.artifactId )
+            .append( "', version='" )
+            .append( this.version )
+            .append( "', classifier='" )
+            .append( this.classifier )
+            .append( "', mainClass='" )
+            .append( this.mainClass )
+            .append( "', outputJarVersion='")
+            .append( this.outputJarVersion )
+            .append( "', outputDownload='")
+            .append( this.outputDownload )
+            .append( "' ]" );
+        return sb.toString();    	
     }
 }

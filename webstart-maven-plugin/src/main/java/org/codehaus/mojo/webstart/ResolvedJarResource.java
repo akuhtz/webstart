@@ -106,6 +106,16 @@ public class ResolvedJarResource
         return jarResource.isIncludeInJnlp();
     }
 
+    public boolean isOutputDownload()
+    {
+        return jarResource.isOutputDownload();
+    }
+
+    public String getOutputDownload()
+    {
+        return jarResource.getOutputDownload();
+    }
+
     /**
      * Returns the underlying artifact that this instance represents.
      *
