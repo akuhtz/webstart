@@ -109,6 +109,7 @@ public class DefaultIOUtil
     public void copyDirectoryStructure( File sourceDirectory, File targetDirectory )
             throws MojoExecutionException
     {
+    	getLogger().info( "Create the target directory: " + targetDirectory.getPath() );
 
         makeDirectoryIfNecessary( targetDirectory );
 
@@ -200,7 +201,6 @@ public class DefaultIOUtil
     public void makeDirectoryIfNecessary( File dir )
             throws MojoExecutionException
     {
-
         if ( !dir.exists() && !dir.mkdirs() )
         {
             throw new MojoExecutionException( "Failed to create directory: " + dir );

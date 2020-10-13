@@ -31,9 +31,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.filter.AndArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.InversionArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -86,6 +84,14 @@ public class JnlpDownloadServletMojo
      */
     @Parameter( property = "jnlp.outputDirectoryName", defaultValue = "webstart" )
     private String outputDirectoryName;
+
+    /**
+     * The name of the directory into which the generated data will be stored after
+     * processing. This directory will be used as base for the
+     * <i>outputDirectoryName</i>.
+     */
+    @Parameter( property = "jnlp.outputPathName", defaultValue = "${project.build.finalName}" )
+    private String outputPathName;
 
     /**
      * The collection of JnlpFile configuration elements. Each one represents a
@@ -215,10 +221,8 @@ public class JnlpDownloadServletMojo
         // ---
         // Copy to final directory
         // ---
-
-        //FIXME Should be able to configure this
         File outputDir = new File( getProject().getBuild().getDirectory(),
-                                   getProject().getBuild().getFinalName() + File.separator + outputDirectoryName );
+                                   this.outputPathName + File.separator + outputDirectoryName );
 
         ioUtil.copyDirectoryStructure( getWorkDirectory(), outputDir );
     }
