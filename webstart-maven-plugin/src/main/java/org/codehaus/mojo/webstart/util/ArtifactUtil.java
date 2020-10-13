@@ -72,6 +72,6 @@ public interface ArtifactUtil
 
     Set<Artifact> resolveTransitively( Set<Artifact> jarResourceArtifacts, Set<MavenProject> siblingProjects,
                                        Artifact artifact, ArtifactRepository localRepository,
-                                       List<ArtifactRepository> remoteRepositories, ArtifactFilter artifactFilter, Map managedVersions )
+                                       List<ArtifactRepository> remoteRepositories, ArtifactFilter artifactFilter, Map<String, Artifact> managedVersions )
             throws MojoExecutionException;
 }

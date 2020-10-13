@@ -1,5 +1,12 @@
 package org.codehaus.mojo.webstart;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -23,6 +30,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.filter.AndArtifactFilter;
+import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.InversionArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.TypeArtifactFilter;
@@ -38,13 +46,6 @@ import org.codehaus.mojo.webstart.generator.JarResourcesGenerator;
 import org.codehaus.mojo.webstart.generator.VersionXmlGenerator;
 import org.codehaus.mojo.webstart.util.ArtifactUtil;
 import org.codehaus.mojo.webstart.util.IOUtil;
-
-import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * MOJO is tailored for use within a Maven web application project that uses
@@ -166,7 +167,7 @@ public class JnlpDownloadServletMojo
 
         for ( JnlpFile jnlpFile : jnlpFiles )
         {
-            verboseLog( "prepare jnlp " + jnlpFile );
+            verboseLog( "prepare jnlp: " + jnlpFile );
 
             if ( getOutputDownload() != null && getOutputDownload().length() > 0 ) 
             {
@@ -459,8 +460,10 @@ public class JnlpDownloadServletMojo
         for ( JarResource jarResource : configuredJarResources )
         {
             Artifact artifact = artifactUtil.createArtifact( jarResource );
+            
+            getLog().info( "Resolved artifact for configured jarResource: " + jarResource + ", artifact: " + artifact );
 
-            // first try to resolv from reactor
+            // first try to resolve from reactor
             MavenProject siblingProject = artifactUtil.resolveFromReactor( artifact, getProject(), reactorProjects );
             if ( siblingProject == null )
             {
@@ -496,6 +499,14 @@ public class JnlpDownloadServletMojo
                                     jarResource );
                 }
             }
+            
+            // if SNAPSHOT and maven 3 there might be a unique version resolved ...
+            if (artifact.isSnapshot()) {
+                getLog().info( "The current artifact is a snapshot version. Set the base version as artifact version: " + artifact.getBaseVersion() );
+                artifact.setVersion(artifact.getBaseVersion());
+            }
+            getLog().info( "Resolved artifact: " + artifact );
+                        
             ResolvedJarResource resolvedJarResource = new ResolvedJarResource( jarResource, artifact );
             getLog().debug( "Add jarResource (configured): " + jarResource );
             collectedJarResources.add( resolvedJarResource );
@@ -503,19 +514,25 @@ public class JnlpDownloadServletMojo
 
         if ( !isExcludeTransitive() )
         {
+        	Artifact projectArtifact = artifacts.iterator().next();
+        	getLog().info( "Resolve transitive dependencies for artifact: " + projectArtifact /*getProject().getArtifact().getArtifactId()*/ );
 
             // prepare artifact filter
 
             AndArtifactFilter artifactFilter = new AndArtifactFilter();
             // restricts to runtime and compile scope
             artifactFilter.add( new ScopeArtifactFilter( Artifact.SCOPE_RUNTIME ) );
+            // do not add optional artifacts
+            artifactFilter.add( new NotOptionalFilter() );
+
+            // this causes problems if the pom contains dependencies
             // restricts to not pom dependencies
-            artifactFilter.add( new InversionArtifactFilter( new TypeArtifactFilter( "pom" ) ) );
+            //artifactFilter.add( new InversionArtifactFilter( new TypeArtifactFilter( "pom" ) ) );
 
             // get all transitive dependencies
 
             Set<Artifact> transitiveArtifacts =
-                    getArtifactUtil().resolveTransitively( artifacts, siblingProjects, getProject().getArtifact(),
+                    getArtifactUtil().resolveTransitively( artifacts, siblingProjects, projectArtifact /*getProject().getArtifact()*/,
                                                            getLocalRepository(), getRemoteRepositories(), artifactFilter, getProject().getManagedVersionMap() );
 
             // for each transitive dependency, wrap it in a JarResource and add it to the collection of
@@ -524,13 +541,29 @@ public class JnlpDownloadServletMojo
             {
 
                 ResolvedJarResource newJarResource = new ResolvedJarResource( resolvedArtifact );
+                
+                // prevent add pom files to collected resources
+                if(resolvedArtifact.getType().equalsIgnoreCase("pom")) {
+                    getLog().info("Skip adding the transitive dependency because it's of type 'pom': "+resolvedArtifact.getId());
+                    continue;
+                }
+
+                // if SNAPSHOT and maven 3 there might be a unique version resolved ...
+                if (resolvedArtifact.isSnapshot()) {
+                    getLog().info("The current artifact is a snapshot version. Set the base version as artifact version: " + resolvedArtifact.getBaseVersion());
+                    resolvedArtifact.setVersion(resolvedArtifact.getBaseVersion());
+                }
 
                 if ( !collectedJarResources.contains( newJarResource ) )
                 {
-                    getLog().debug( "Add jarResource (transitive): " + newJarResource );
+                    getLog().info( "Add jarResource (transitive): " + newJarResource );
                     collectedJarResources.add( newJarResource );
                 }
             }
+        }
+        else 
+        {
+        	getLog().info( "Transitive dependencies are excluded by configuration." );
         }
 
         // for each JarResource, copy its artifact to the lib directory if necessary
@@ -560,6 +593,16 @@ public class JnlpDownloadServletMojo
             jarResource.setHrefValue( filename );
         }
         return collectedJarResources;
+    }
+    
+    private class NotOptionalFilter implements ArtifactFilter 
+    {
+
+		@Override
+		public boolean include(Artifact artifact) {
+			return !artifact.isOptional();
+		}
+    	
     }
 
     private void generateJnlpFile( ResolvedJnlpFile jnlpFile, String libPath )

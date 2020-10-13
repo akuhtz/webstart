@@ -1,5 +1,10 @@
 package org.codehaus.mojo.webstart.generator;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,13 +25,9 @@ package org.codehaus.mojo.webstart.generator;
  */
 
 import org.apache.maven.plugin.MojoExecutionException;
+import org.codehaus.mojo.webstart.AbstractBaseJnlpMojo;
 import org.codehaus.mojo.webstart.ResolvedJarResource;
 import org.codehaus.plexus.util.WriterFactory;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
 
 /**
  * This class generates a <code>version.xml</code> file for a given collection of
@@ -81,7 +82,6 @@ public class VersionXmlGenerator
         {
             File versionXmlFile = new File( outputDir, "version.xml" );
             writer = new BufferedWriter( WriterFactory.newWriter( versionXmlFile, encoding ) );
-
             generateXml( writer, jarResources );
 
         }
@@ -126,7 +126,7 @@ public class VersionXmlGenerator
             writer.write( "</name>" );
             writer.newLine();
             writer.write( "      <version-id>" );
-            writer.write( jarResource.getVersion() );
+                writer.write( jarResource.getVersion() );
             writer.write( "</version-id>" );
             writer.newLine();
             writer.write( "    </pattern>" );

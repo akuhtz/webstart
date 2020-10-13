@@ -188,18 +188,7 @@ public abstract class AbstractJnlpMojo
     private File basedir;
 
     /**
-     * When set to true, this flag indicates that a version attribute should
-     * be output in each of the jar resource elements in the generated
-     * JNLP file.
-     * <p>
-     * <strong>Note: </strong> since version 1.0-beta-5 we use the version download protocol optimization (see
-     * http://docs.oracle.com/javase/tutorial/deployment/deploymentInDepth/avoidingUnnecessaryUpdateChecks.html).
-     */
-    @Parameter( property = "jnlp.outputJarVersions", defaultValue = "false" )
-    private boolean outputJarVersions;
-
-    /**
-     * Flag to skip dependencies (this can be usefull if you use a shaded jar).
+     * Flag to skip dependencies (this can be useful if you use a shaded jar).
      *
      * @since 1.0.0
      */
@@ -371,6 +360,8 @@ public abstract class AbstractJnlpMojo
     {
         return this.dependencies;
     }
+    
+    
 
     // ----------------------------------------------------------------------
     // Private Methods
@@ -582,7 +573,7 @@ public abstract class AbstractJnlpMojo
                 }
 
                 String name =
-                        getDependencyFilenameStrategy().getDependencyFilename( artifact, outputJarVersions, isUseUniqueVersions() );
+                        getDependencyFilenameStrategy().getDependencyFilename( artifact, isOutputJarVersions(), isUseUniqueVersions() );
 
                 boolean copied = copyJarAsUnprocessedToDirectoryIfNecessary( toCopy, getLibDirectory(), name );
 
@@ -682,7 +673,7 @@ public abstract class AbstractJnlpMojo
                                               getWebstartJarURLForVelocity(), getEncoding() );
 
         GeneratorConfig generatorConfig =
-                new GeneratorConfig( getLibPath(), isPack200(), outputJarVersions, isUseUniqueVersions(), artifactWithMainClass,
+                new GeneratorConfig( getLibPath(), isPack200(), isOutputJarVersions(), isUseUniqueVersions(), artifactWithMainClass,
                                      getDependencyFilenameStrategy(), packagedJnlpArtifacts, jnlpExtensions, getCodebase(),
                                      jnlp );
 
@@ -704,7 +695,7 @@ public abstract class AbstractJnlpMojo
 
         	// must handle outputJarVersions == true
         	String targetFilename =
-                    getDependencyFilenameStrategy().getDependencyFilename( artifactWithMainClass, outputJarVersions, isUseUniqueVersions() );
+                    getDependencyFilenameStrategy().getDependencyFilename( artifactWithMainClass, isOutputJarVersions(), isUseUniqueVersions() );
         	
             File jarFile = new File( getLibDirectory(), targetFilename);
 
@@ -991,7 +982,7 @@ public abstract class AbstractJnlpMojo
                 }
 
                 String targetFilename =
-                        getDependencyFilenameStrategy().getDependencyFilename( artifact, outputJarVersions, isUseUniqueVersions() );
+                        getDependencyFilenameStrategy().getDependencyFilename( artifact, isOutputJarVersions(), isUseUniqueVersions() );
 
                 File targetFile = new File( getLibDirectory(), targetFilename );
                 boolean copied = getIoUtil().shouldCopyFile( toCopy, targetFile );
@@ -1108,7 +1099,7 @@ public abstract class AbstractJnlpMojo
                                               getWebstartJarURLForVelocity(), getEncoding() );
 
         ExtensionGeneratorConfig extensionGeneratorConfig =
-                new ExtensionGeneratorConfig( getLibPath(), isPack200(), outputJarVersions, isUseUniqueVersions(),
+                new ExtensionGeneratorConfig( getLibPath(), isPack200(), isOutputJarVersions(), isUseUniqueVersions(),
                                               artifactWithMainClass, getDependencyFilenameStrategy(),
                                               extensionsJnlpArtifacts, getCodebase(), extension );
         ExtensionGenerator jnlpGenerator =

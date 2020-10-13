@@ -76,7 +76,7 @@ public class JarResourcesGeneratorTest
         //Add some JarResources and confirm the correct output
         ResolvedJarResource jarResource1 = buildJarResource( "href1", "1.1", "bogus.Class", true, true );
         ResolvedJarResource jarResource2 = buildJarResource( "href2", "1.2", null, true, true );
-        ResolvedJarResource jarResource3 = buildJarResource( "href3.jar", "1.3", null, false, true );
+        ResolvedJarResource jarResource3 = buildJarResource( "href3", "1.3", null, false, true );
         ResolvedJarResource jarResource4 = buildJarResource( "href4", "1.4", null, false, false );
 
         jarResources.add( jarResource1 );
@@ -86,7 +86,7 @@ public class JarResourcesGeneratorTest
 
         String expectedText =EOL + "<jar href=\"href1\" version=\"1.1\" main=\"true\"/>" + 
         		EOL + "<jar href=\"href2\" version=\"1.2\"/>" +
-        		EOL + "<jar href=\"href3-1.3.jar\"/>" + EOL;
+        		EOL + "<jar href=\"href3-1.3\"/>" + EOL;
 
         String actualText = generator.getDependenciesText();
 
@@ -103,7 +103,7 @@ public class JarResourcesGeneratorTest
 
         String expectedText2 = EOL + "<jar href=\"myLib/href1\" version=\"1.1\" main=\"true\"/>" +
         		EOL + "<jar href=\"myLib/href2\" version=\"1.2\"/>" + 
-        		EOL + "<jar href=\"myLib/href3-1.3.jar\"/>" + EOL;
+        		EOL + "<jar href=\"myLib/href3-1.3\"/>" + EOL;
 
         String actualText2 = generator2.getDependenciesText();
 

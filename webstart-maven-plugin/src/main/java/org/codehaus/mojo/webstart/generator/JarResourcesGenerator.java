@@ -116,8 +116,11 @@ public class JarResourcesGenerator
                     
                     getLog().info( "Current baseName: " + baseName + ", extension: " + extension + ", version: " + jarResource.getVersion() );
                     
-                    buffer.append(baseName).append("-").append(jarResource.getVersion()).
-                    append(".").append(extension).append( "\"" );                    
+                    buffer.append(baseName).append("-").append(jarResource.getVersion());
+                    if (extension != null && extension.length() > 0) {
+                        buffer.append(".").append(extension);
+                    }
+                    buffer.append( "\"" );
                 }
                 
                 if ( jarResource.isOutputDownload() && !snapshotVersion ) 

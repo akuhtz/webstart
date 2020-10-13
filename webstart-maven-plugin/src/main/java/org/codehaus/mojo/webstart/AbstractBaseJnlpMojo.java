@@ -249,6 +249,18 @@ public abstract class AbstractBaseJnlpMojo
     @Parameter( defaultValue = "" )
     private String outputDownload;
     
+    /**
+     * When set to true, this flag indicates that a version attribute should
+     * be output in each of the jar resource elements in the generated
+     * JNLP file.
+     * <p>
+     * <strong>Note: </strong> since version 1.0-beta-5 we use the version download protocol optimization (see
+     * http://docs.oracle.com/javase/tutorial/deployment/deploymentInDepth/avoidingUnnecessaryUpdateChecks.html).
+     */
+    @Parameter( property = "jnlp.outputJarVersions", defaultValue = "false" )
+    private boolean outputJarVersions;
+    
+    
     // ----------------------------------------------------------------------
     // Components
     // ----------------------------------------------------------------------
@@ -425,6 +437,11 @@ public abstract class AbstractBaseJnlpMojo
     public List<String> getPack200PassFiles()
     {
         return pack200 == null ? null : pack200.getPassFiles();
+    }
+    
+    public boolean isOutputJarVersions() 
+    {
+    	return outputJarVersions;
     }
 
     // ----------------------------------------------------------------------

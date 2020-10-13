@@ -1,5 +1,12 @@
 package org.codehaus.mojo.webstart.util;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -26,6 +33,7 @@ import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ArtifactResolver;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
@@ -35,13 +43,7 @@ import org.codehaus.mojo.webstart.JarResource;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.AbstractLogEnabled;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import org.codehaus.plexus.logging.Logger;
 
 /**
  * Default implementation of {@link ArtifactUtil}.
@@ -54,6 +56,9 @@ public class DefaultArtifactUtil
         extends AbstractLogEnabled
         implements ArtifactUtil
 {
+	
+	@Requirement
+    private Logger logger;
 
     /**
      */
@@ -143,9 +148,9 @@ public class DefaultArtifactUtil
      * {@inheritDoc}
      */
     public Set<Artifact> resolveTransitively( Set<Artifact> jarResourceArtifacts, Set<MavenProject> siblingProjects,
-                                              Artifact originateArtifact, ArtifactRepository localRepository,
+                                              Artifact originatingArtifact, ArtifactRepository localRepository,
                                               List<ArtifactRepository> remoteRepositories,
-                                              ArtifactFilter artifactFilter, Map managedVersions )
+                                              ArtifactFilter artifactFilter, Map<String, Artifact> managedVersions )
             throws MojoExecutionException
     {
 
@@ -162,31 +167,70 @@ public class DefaultArtifactUtil
                 {
                     if ( artifactFilter.include( artifact ) )
                     {
-
+                    	logger.info( "Add artifact from siblingProject: " + artifact );
+                    	
                         resultArtifacts.add( artifact );
                     }
                 }
             }
         }
-        try
-        {
-            ArtifactResolutionResult result =
-                    artifactResolver.resolveTransitively( jarResourceArtifacts, originateArtifact,
-                                                          managedVersions,
-                                                          localRepository, remoteRepositories, this.artifactMetadataSource,
-                                                          artifactFilter );
+        
+        resolve(jarResourceArtifacts, siblingProjects, originatingArtifact, localRepository, remoteRepositories, artifactFilter, managedVersions, resultArtifacts);
 
-            resultArtifacts.addAll( result.getArtifacts() );
+        return resultArtifacts;
+    }
+    
+    private void resolve(Set<Artifact> jarResourceArtifacts, Set<MavenProject> siblingProjects,
+            Artifact originatingArtifact, ArtifactRepository localRepository,
+            List<ArtifactRepository> remoteRepositories,
+            ArtifactFilter artifactFilter, Map<String, Artifact> managedVersions, Set<Artifact> resultArtifacts) {
+    	
+    	logger.info( "Resolve transitive artifacts of artifacts: " + originatingArtifact );
+    	
+    	final ArtifactResolutionRequest request = new ArtifactResolutionRequest(). //
+                setArtifact( originatingArtifact ). //
+                setResolveRoot( false ). //
+                // This is required by the surefire plugin
+                setArtifactDependencies( jarResourceArtifacts ). //
+                setManagedVersionMap( managedVersions ). //
+                setLocalRepository( localRepository ). //
+                setRemoteRepositories( remoteRepositories ). //
+                setCollectionFilter( artifactFilter ). //
+                setResolveTransitively(true);
+    	
+    	ArtifactResolutionResult result =
+                artifactResolver.resolve(request);
+    	
+        if ( logger.isDebugEnabled() ) 
+        {
+        	logger.debug( "Current resultArtifacts: " + resultArtifacts );
+        }
+        
+    	Set<Artifact> resolveArtifacts = new LinkedHashSet<>();
 
-            return resultArtifacts;
-        }
-        catch ( ArtifactResolutionException e )
+    	for ( Artifact artifact : result.getArtifacts() ) 
+    	{
+    		if (!resultArtifacts.contains(artifact)) 
+    		{
+    			logger.info("Add the new artifact to resolve transitively: " + artifact);
+    			resolveArtifacts.add(artifact);
+    		}
+    		else 
+    		{
+    			logger.debug( "The artifact was found in the resultArtifacts: " + artifact );
+    		}
+    	}
+    	
+        resultArtifacts.addAll( result.getArtifacts() );
+        
+        if ( logger.isDebugEnabled() ) 
         {
-            throw new MojoExecutionException( "Could not resolv transitive dependencies", e );
+        	logger.debug( "Current transient artifacts to resolve: " + resolveArtifacts );
         }
-        catch ( ArtifactNotFoundException e )
-        {
-            throw new MojoExecutionException( "Could not find transitive dependencies ", e );
+        
+        for ( Artifact artifact : resolveArtifacts ) {
+        	resolve(resultArtifacts, siblingProjects, artifact, 
+        			localRepository, remoteRepositories, artifactFilter, managedVersions, resultArtifacts);
         }
     }
 

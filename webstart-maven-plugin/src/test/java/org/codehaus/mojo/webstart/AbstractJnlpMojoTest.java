@@ -30,12 +30,9 @@ import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
-import org.apache.maven.profiles.DefaultProfileManager;
-import org.apache.maven.profiles.ProfileManager;
 import org.apache.maven.project.DefaultProjectBuilder;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuilder;
 
 /**
  * @author <a href="jerome@coffeebreaks.org">Jerome Lacoste</a>
@@ -56,10 +53,10 @@ public abstract class AbstractJnlpMojoTest
 
         // -- TODO why can't this be read/set from the pom.xml file?
         AbstractJnlpMojo.Dependencies deps = new AbstractJnlpMojo.Dependencies();
-        List includes = new ArrayList();
+        List<String> includes = new ArrayList<>();
         includes.add( "tatatata" );
         includes.add( "titititi" );
-        List excludes = new ArrayList();
+        List<String> excludes = new ArrayList<>();
         excludes.add( "commons-lang:commons-lang" );
         excludes.add( "totototo" );
         deps.setIncludes( includes );
@@ -92,7 +89,7 @@ public abstract class AbstractJnlpMojoTest
 
         // -- TODO why can't this be read/set from the pom.xml file?
         AbstractJnlpMojo.Dependencies deps = new AbstractJnlpMojo.Dependencies();
-        List excludes = new ArrayList();
+        List<String> excludes = new ArrayList<>();
         excludes.add( "commons-lang:commons-lang" );
         deps.setExcludes( excludes );
         setVariableValueToObject( mojo, "dependencies", deps );

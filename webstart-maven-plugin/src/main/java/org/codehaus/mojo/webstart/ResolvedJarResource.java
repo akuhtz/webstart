@@ -248,5 +248,19 @@ public class ResolvedJarResource
     {
         return field == null ? 0 : field.hashCode();
     }
+    
+    @Override
+    public String toString() {
+    	final StringBuilder sb = new StringBuilder("ResolvedJarResource [");
+    	sb.append("groupId=").append(artifact.getGroupId());
+    	sb.append(", artifactId=").append(artifact.getArtifactId());
+    	sb.append(", version=").append(artifact.getVersion());
+    	sb.append(", baseVersion=").append(artifact.getBaseVersion());
+    	sb.append(", classifier=").append(artifact.getClassifier());
+    	sb.append(", type=").append(artifact.getType());
+    	sb.append("]");
+    	return sb.toString();
+    }
+    
 }
 

@@ -25,6 +25,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.codehaus.mojo.webstart.JarResource;
 import org.codehaus.mojo.webstart.ResolvedJarResource;
 import org.codehaus.plexus.util.ReaderFactory;
 import org.custommonkey.xmlunit.Diff;
@@ -99,7 +100,7 @@ public class VersionXmlGeneratorTest
 
         try
         {
-            new VersionXmlGenerator( "utf-8" ).generate( null, new ArrayList() );
+            new VersionXmlGenerator( "utf-8" ).generate( null, new ArrayList<ResolvedJarResource>() );
             Assert.fail( "Should have thrown an IllegalArgumentException" );
         }
         catch ( IllegalArgumentException e )
