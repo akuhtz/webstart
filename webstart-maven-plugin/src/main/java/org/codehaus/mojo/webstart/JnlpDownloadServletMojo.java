@@ -518,52 +518,56 @@ public class JnlpDownloadServletMojo
 
         if ( !isExcludeTransitive() )
         {
-        	Artifact projectArtifact = artifacts.iterator().next();
-        	getLog().info( "Resolve transitive dependencies for artifact: " + projectArtifact /*getProject().getArtifact().getArtifactId()*/ );
-
-            // prepare artifact filter
-
-            AndArtifactFilter artifactFilter = new AndArtifactFilter();
-            // restricts to runtime and compile scope
-            artifactFilter.add( new ScopeArtifactFilter( Artifact.SCOPE_RUNTIME ) );
-            // do not add optional artifacts
-            artifactFilter.add( new NotOptionalFilter() );
-
-            // this causes problems if the pom contains dependencies
-            // restricts to not pom dependencies
-            //artifactFilter.add( new InversionArtifactFilter( new TypeArtifactFilter( "pom" ) ) );
-
-            // get all transitive dependencies
-
-            Set<Artifact> transitiveArtifacts =
-                    getArtifactUtil().resolveTransitively( artifacts, siblingProjects, projectArtifact /*getProject().getArtifact()*/,
-                                                           getLocalRepository(), getRemoteRepositories(), artifactFilter, getProject().getManagedVersionMap() );
-
-            // for each transitive dependency, wrap it in a JarResource and add it to the collection of
-            // existing jar resources (if not already in)
-            for ( Artifact resolvedArtifact : transitiveArtifacts )
-            {
-
-                ResolvedJarResource newJarResource = new ResolvedJarResource( resolvedArtifact );
-                
-                // prevent add pom files to collected resources
-                if(resolvedArtifact.getType().equalsIgnoreCase("pom")) {
-                    getLog().info("Skip adding the transitive dependency because it's of type 'pom': "+resolvedArtifact.getId());
-                    continue;
-                }
-
-                // if SNAPSHOT and maven 3 there might be a unique version resolved ...
-                if (resolvedArtifact.isSnapshot()) {
-                    getLog().info("The current artifact is a snapshot version. Set the base version as artifact version: " + resolvedArtifact.getBaseVersion());
-                    resolvedArtifact.setVersion(resolvedArtifact.getBaseVersion());
-                }
-
-                if ( !collectedJarResources.contains( newJarResource ) )
-                {
-                    getLog().info( "Add jarResource (transitive): " + newJarResource );
-                    collectedJarResources.add( newJarResource );
-                }
-            }
+        	// process all project artifacts
+        	
+        	for ( Artifact projectArtifact : artifacts ) 
+        	{
+	        	getLog().info( "Resolve transitive dependencies for artifact: " + projectArtifact );
+	
+	            // prepare artifact filter
+	
+	            AndArtifactFilter artifactFilter = new AndArtifactFilter();
+	            // restricts to runtime and compile scope
+	            artifactFilter.add( new ScopeArtifactFilter( Artifact.SCOPE_RUNTIME ) );
+	            // do not add optional artifacts
+	            artifactFilter.add( new NotOptionalFilter() );
+	
+	            // this causes problems if the pom contains dependencies
+	            // restricts to not pom dependencies
+	            //artifactFilter.add( new InversionArtifactFilter( new TypeArtifactFilter( "pom" ) ) );
+	
+	            // get all transitive dependencies
+	
+	            Set<Artifact> transitiveArtifacts =
+	                    getArtifactUtil().resolveTransitively( artifacts, siblingProjects, projectArtifact,
+	                                                           getLocalRepository(), getRemoteRepositories(), artifactFilter, getProject().getManagedVersionMap() );
+	
+	            // for each transitive dependency, wrap it in a JarResource and add it to the collection of
+	            // existing jar resources (if not already in)
+	            for ( Artifact resolvedArtifact : transitiveArtifacts )
+	            {
+	
+	                ResolvedJarResource newJarResource = new ResolvedJarResource( resolvedArtifact );
+	                
+	                // prevent add pom files to collected resources
+	                if(resolvedArtifact.getType().equalsIgnoreCase("pom")) {
+	                    getLog().info("Skip adding the transitive dependency because it's of type 'pom': "+resolvedArtifact.getId());
+	                    continue;
+	                }
+	
+	                // if SNAPSHOT and maven 3 there might be a unique version resolved ...
+	                if (resolvedArtifact.isSnapshot()) {
+	                    getLog().info("The current artifact is a snapshot version. Set the base version as artifact version: " + resolvedArtifact.getBaseVersion());
+	                    resolvedArtifact.setVersion(resolvedArtifact.getBaseVersion());
+	                }
+	
+	                if ( !collectedJarResources.contains( newJarResource ) )
+	                {
+	                    getLog().info( "Add jarResource (transitive): " + newJarResource );
+	                    collectedJarResources.add( newJarResource );
+	                }
+	            }
+        	}
         }
         else 
         {
