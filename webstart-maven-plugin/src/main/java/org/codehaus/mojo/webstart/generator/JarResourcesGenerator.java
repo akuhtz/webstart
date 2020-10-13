@@ -1,6 +1,8 @@
 package org.codehaus.mojo.webstart.generator;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -38,6 +40,9 @@ import org.codehaus.plexus.util.StringUtils;
 public class JarResourcesGenerator
         extends AbstractGenerator<JarResourceGeneratorConfig>
 {
+    
+    private final String[] ARCH_ARRAY = { "WIN32", "WIN64", "WINAMD64" };
+    private final List ARCH_TO_REMOVE = Arrays.asList(ARCH_ARRAY);
 
     public JarResourcesGenerator( Log log, GeneratorTechnicalConfig technicalConfig,
                                   JarResourceGeneratorConfig extraConfig )
@@ -79,7 +84,7 @@ public class JarResourcesGenerator
             for ( ResolvedJarResource jarResource : jarResources )
             {
 
-                if ( !jarResource.isIncludeInJnlp() || ("win32".equalsIgnoreCase(jarResource.getClassifier())))
+                if ( !jarResource.isIncludeInJnlp() || (jarResource.getClassifier() != null && ARCH_TO_REMOVE.contains(jarResource.getClassifier().toUpperCase())))            	
                 {
                     continue;
                 }
@@ -96,7 +101,7 @@ public class JarResourcesGenerator
 
                 if ( jarResource.isOutputJarVersion() && !snapshotVersion )
                 {
-                	getLog().info( "Current jarResource.Href: " + jarResource.getHrefValue() ); 
+                	getLog().debug( "Current jarResource.Href: " + jarResource.getHrefValue() ); 
                 
                     buffer.append( jarResource.getHrefValue() );
                     buffer.append( "\"" );
@@ -114,7 +119,7 @@ public class JarResourcesGenerator
                     	baseName = baseName.substring(0, endIndex);
                     }
                     
-                    getLog().info( "Current baseName: " + baseName + ", extension: " + extension + ", version: " + jarResource.getVersion() );
+                    getLog().debug( "Current baseName: " + baseName + ", extension: " + extension + ", version: " + jarResource.getVersion() );
                     
                     buffer.append(baseName).append("-").append(jarResource.getVersion());
                     if (extension != null && extension.length() > 0) {
@@ -125,7 +130,8 @@ public class JarResourcesGenerator
                 
                 if ( jarResource.isOutputDownload() && !snapshotVersion ) 
                 {
-                    getLog().info( "Set the download attribute '" + jarResource.getOutputDownload() + "' for resource: " + jarResource.getGroupId()+":"+jarResource.getArtifactId() );
+                    getLog().debug( "Set the download attribute '" + jarResource.getOutputDownload() + "' for resource: " + 
+                    		jarResource.getGroupId() + ":" + jarResource.getArtifactId() );
 
                     buffer.append(" download=\"").append(jarResource.getOutputDownload()).append("\"");
                 }                
@@ -145,6 +151,23 @@ public class JarResourcesGenerator
     @Override
     protected String getDependenciesNativeWin32Text() 
     {
+	    return getDependenciesNativeText("win32", "x86");
+	}
+	
+	@Override
+	protected String getDependenciesNativeWin64Text() 
+	{
+	    return getDependenciesNativeText("win64", "x86_64");
+	}
+	
+	@Override
+	protected String getDependenciesNativeWinAmd64Text() 
+	{
+	    return getDependenciesNativeText("winamd64", "amd64");
+	}
+	
+	protected String getDependenciesNativeText(String classifier, String arch) 
+	{
     	
         String jarResourcesText = "";
         
@@ -156,65 +179,57 @@ public class JarResourcesGenerator
             StringBuffer buffer = new StringBuffer( 100 * jarResources.size() );
             buffer.append( EOL );
 
-            boolean nativeWin32Added = false;
+            boolean nativeDependencyAdded = false;
             for ( ResolvedJarResource jarResource : jarResources )
             {
                 
-                if ( !jarResource.isIncludeInJnlp() || !("win32".equalsIgnoreCase(jarResource.getClassifier())))
+                if ( !jarResource.isIncludeInJnlp() || !(classifier.equalsIgnoreCase(jarResource.getClassifier())))
                 {
                     continue;
                 }    
 
-                if (!nativeWin32Added) {
-                    buffer.append( "\t<resources os=\"Windows\" arch=\"x86\">" ).append( EOL );
-                    nativeWin32Added = true;
+                if (!nativeDependencyAdded) {
+                    buffer.append( "<resources os=\"Windows\" arch=\"");
+                    buffer.append(arch);
+                    buffer.append("\">" ).append( EOL );
+                    nativeDependencyAdded = true;
                 }
                 
                 // snapshot version should be transfered every time if the timestamp is not the same
                 boolean snapshotVersion = ArtifactUtils.isSnapshot(jarResource.getVersion());
                 if (!jarResource.isOutputJarVersion() || snapshotVersion) {
                     
-                    if ("win32".equalsIgnoreCase(jarResource.getClassifier())) {
-                        String extension = FilenameUtils.getExtension(jarResource.getHrefValue());
-                        buffer.append( "\t\t<nativelib href=\"" );
-                        if ( StringUtils.isNotEmpty( libPath ) )
-                        {
-                            buffer.append( libPath );
-                            buffer.append( '/' );
-                        }
+                    String extension = FilenameUtils.getExtension(jarResource.getHrefValue());
+                    buffer.append( "\t<nativelib href=\"" );
+                    if ( StringUtils.isNotEmpty( libPath ) )
+                    {
+                        buffer.append( libPath );
+                        buffer.append( '/' );
+                    }
 
-                        buffer.append(jarResource.getArtifactId()).append("-").append(jarResource.getVersion()).
-                        append("-").append(jarResource.getClassifier()).append(".").append(extension).append( "\"" );
-                        buffer.append( "/>" ).append( EOL );
-                    }
-                    else {
-                        continue;
-                    }
+                    buffer.append(jarResource.getArtifactId()).append("-").append(jarResource.getVersion()).
+                    append("-").append(jarResource.getClassifier()).append(".").append(extension).append( "\"" );
+                    buffer.append( "/>" ).append( EOL );
                 }
                 else {
 
-                    if ("win32".equalsIgnoreCase(jarResource.getClassifier())) {
-                        buffer.append( "\t\t<nativelib href=\"" );
-                        if ( StringUtils.isNotEmpty( libPath ) )
-                        {
-                            buffer.append( libPath );
-                            buffer.append( '/' );
-                        }
+                    buffer.append( "\t<nativelib href=\"" );
+                    if ( StringUtils.isNotEmpty( libPath ) )
+                    {
+                        buffer.append( libPath );
+                        buffer.append( '/' );
+                    }
 
-                        buffer.append( jarResource.getHrefValue() ).append( "\"" );
-                        if ( jarResource.isOutputJarVersion() && !snapshotVersion ) 
-                        {
-                            buffer.append(" version=\"").append(jarResource.getVersion()).append("\"");
-                        }
-                        buffer.append( "/>" ).append( EOL );
+                    buffer.append( jarResource.getHrefValue() ).append( "\"" );
+                    if ( jarResource.isOutputJarVersion() && !snapshotVersion ) 
+                    {
+                        buffer.append(" version=\"").append(jarResource.getVersion()).append("\"");
                     }
-                    else {
-                        continue;
-                    }
+                    buffer.append( "/>" ).append( EOL );
                 }
             }
-            if (nativeWin32Added) {
-                buffer.append( "\t</resources>" );
+            if (nativeDependencyAdded) {
+                buffer.append( "</resources>" ).append( EOL );
             }
             jarResourcesText = buffer.toString();
         }

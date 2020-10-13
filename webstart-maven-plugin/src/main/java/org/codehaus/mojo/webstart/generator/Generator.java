@@ -53,13 +53,6 @@ public class Generator
     {
         return indentText( 4, getDependenciesText( getExtraConfig() ) );
     }
-
-    @Override
-    protected String getDependenciesNativeWin32Text()
-    {
-        //get the native win32 dependencies
-        return "";
-    }
     
     @Override
     protected VelocityContext createAndPopulateContext()

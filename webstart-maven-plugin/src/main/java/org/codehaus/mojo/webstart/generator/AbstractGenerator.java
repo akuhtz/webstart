@@ -179,7 +179,7 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
 
     /**
      * Subclasses must implement this method to return the text that should
-     * replace the $dependencies placeholder in the JNLP template.
+     * replace the {@code $dependencies} placeholder in the JNLP template.
      *
      * @return The dependencies text, never null.
      */
@@ -187,10 +187,35 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
 
     /**
      * Subclasses must implement this method to return the text that should 
-     * replace the $dependenciesNativeWin32 placeholder in the JNLP template.
+     * replace the {@code $dependenciesNativeWin32} placeholder in the JNLP template.
      * @return The dependencies text, never null.
      */
-    protected abstract String getDependenciesNativeWin32Text( );
+    protected String getDependenciesNativeWin32Text()
+    {
+        //get the native win32 dependencies
+        return "";
+    }
+    
+    /**
+     * Subclasses must implement this method to return the text that should 
+     * replace the {@code $dependenciesNativeWin64} placeholder in the JNLP template.
+     * @return The dependencies text, never null.
+     */
+    protected String getDependenciesNativeWin64Text()
+    {
+        // get the native win64 dependencies
+        return "";
+    }
+    /**
+     * Subclasses must implement this method to return the text that should 
+     * replace the {@code $dependenciesNativeWinAmd64} placeholder in the JNLP template.
+     * @return The dependencies text, never null.
+     */
+    protected String getDependenciesNativeWinAmd64Text()
+    {
+        // get the native winAmd64 dependencies
+        return "";
+    }
     
     /**
      * Creates a Velocity context and populates it with replacement values
@@ -204,6 +229,8 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
 
         context.put( "dependencies", getDependenciesText() );
         context.put( "dependenciesNativeWin32", getDependenciesNativeWin32Text() );
+        context.put( "dependenciesNativeWin64", getDependenciesNativeWin64Text( ) );
+        context.put( "dependenciesNativeWinAmd64", getDependenciesNativeWinAmd64Text( ) );
         
         context.put( "arguments", getArgumentsText() );
 
