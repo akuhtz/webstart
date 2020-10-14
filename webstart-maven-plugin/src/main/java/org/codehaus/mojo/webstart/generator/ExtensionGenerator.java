@@ -63,9 +63,9 @@ public class ExtensionGenerator
     }
 
     @Override
-    protected String getDependenciesNativeWin32Text()
+    protected String getDependenciesNativeLibrariesText()
     {
-        //get the native win32 dependencies
+        //get the native library dependencies
         return "";
     }
 }

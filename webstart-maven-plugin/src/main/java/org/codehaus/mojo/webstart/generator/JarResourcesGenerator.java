@@ -2,7 +2,9 @@ package org.codehaus.mojo.webstart.generator;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -41,9 +43,14 @@ public class JarResourcesGenerator
         extends AbstractGenerator<JarResourceGeneratorConfig>
 {
     
-    private final String[] ARCH_ARRAY = { "WIN32", "WIN64", "WINAMD64" };
-    private final List ARCH_TO_REMOVE = Arrays.asList(ARCH_ARRAY);
-
+    private static final String NATIVE_ARCH_WIN32 = "win32";
+    
+    private static final String NATIVE_ARCH_WIN64 = "win64";
+    
+    private static final String NATIVE_ARCH_WINAMD64 = "winamd64";
+    
+    private final List<String> NATIVE_ARCH_CLASSIFIER_MARKERS = Arrays.asList(NATIVE_ARCH_WIN32, NATIVE_ARCH_WIN64, NATIVE_ARCH_WINAMD64);
+	
     public JarResourcesGenerator( Log log, GeneratorTechnicalConfig technicalConfig,
                                   JarResourceGeneratorConfig extraConfig )
     {
@@ -73,9 +80,11 @@ public class JarResourcesGenerator
         String jarResourcesText = "";
 
         String libPath = getExtraConfig().getLibPath();
-        Collection<ResolvedJarResource> jarResources = getExtraConfig().getJarResources();
 
-        if ( jarResources.size() != 0 )
+        Set<ResolvedJarResource> jarResources = new LinkedHashSet<>();
+        jarResources.addAll( getExtraConfig().getJarResources() );
+
+        if ( !jarResources.isEmpty() )
         {
             final int multiplier = 100;
             StringBuilder buffer = new StringBuilder( multiplier * jarResources.size() );
@@ -84,7 +93,7 @@ public class JarResourcesGenerator
             for ( ResolvedJarResource jarResource : jarResources )
             {
 
-                if ( !jarResource.isIncludeInJnlp() || (jarResource.getClassifier() != null && ARCH_TO_REMOVE.contains(jarResource.getClassifier().toUpperCase())))            	
+                if ( !jarResource.isIncludeInJnlp() || (jarResource.getClassifier() != null && NATIVE_ARCH_CLASSIFIER_MARKERS.contains(jarResource.getClassifier().toLowerCase())))            	
                 {
                     continue;
                 }
@@ -147,37 +156,56 @@ public class JarResourcesGenerator
         }
         return jarResourcesText;
     }
-    
+
     @Override
-    protected String getDependenciesNativeWin32Text() 
+    protected String getDependenciesNativeLibrariesText() 
     {
-	    return getDependenciesNativeText("win32", "x86");
+    	String jarResourcesText = "";
+    	
+    	Set<ResolvedJarResource> jarResources = new LinkedHashSet<>();
+        jarResources.addAll( getExtraConfig().getJarResources() );
+        
+    	if ( jarResources.size() != 0 )
+        {
+            final StringBuilder buffer = new StringBuilder( 10 * jarResources.size() );
+            
+            appendDependenciesNativeWin32Text(buffer);
+            
+            appendDependenciesNativeWin64Text(buffer);
+            
+            appendDependenciesNativeWinAmd64Text(buffer);
+            
+            jarResourcesText = buffer.toString();
+        }
+    	
+    	return jarResourcesText;
+    }
+    
+    protected void appendDependenciesNativeWin32Text(final StringBuilder buffer) 
+    {
+	    appendDependenciesNativeText(buffer, NATIVE_ARCH_WIN32, "x86");
 	}
 	
-	@Override
-	protected String getDependenciesNativeWin64Text() 
+	protected void appendDependenciesNativeWin64Text(final StringBuilder buffer) 
 	{
-	    return getDependenciesNativeText("win64", "x86_64");
+	    appendDependenciesNativeText(buffer, NATIVE_ARCH_WIN64, "x86_64");
 	}
 	
-	@Override
-	protected String getDependenciesNativeWinAmd64Text() 
+	protected void appendDependenciesNativeWinAmd64Text(final StringBuilder buffer) 
 	{
-	    return getDependenciesNativeText("winamd64", "amd64");
+	    appendDependenciesNativeText(buffer, NATIVE_ARCH_WINAMD64, "amd64");
 	}
 	
-	protected String getDependenciesNativeText(String classifier, String arch) 
+	protected void appendDependenciesNativeText(final StringBuilder buffer, String classifier, String arch) 
 	{
     	
-        String jarResourcesText = "";
-        
         String libPath = getExtraConfig().getLibPath();
         Collection<ResolvedJarResource> jarResources = getExtraConfig().getJarResources();
         
         if ( jarResources.size() != 0 )
         {
-            StringBuffer buffer = new StringBuffer( 100 * jarResources.size() );
-            buffer.append( EOL );
+//        	StringBuilder buffer = new StringBuilder( 100 * jarResources.size() );
+//            buffer.append( EOL );
 
             boolean nativeDependencyAdded = false;
             for ( ResolvedJarResource jarResource : jarResources )
@@ -231,9 +259,9 @@ public class JarResourcesGenerator
             if (nativeDependencyAdded) {
                 buffer.append( "</resources>" ).append( EOL );
             }
-            jarResourcesText = buffer.toString();
+//            jarResourcesText = buffer.toString();
         }
         
-        return jarResourcesText;
+//        return jarResourcesText;
     }
 }

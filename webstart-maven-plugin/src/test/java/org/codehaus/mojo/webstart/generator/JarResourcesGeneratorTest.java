@@ -12,27 +12,6 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.mojo.webstart.ResolvedJarResource;
 import org.junit.Test;
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
-import junit.framework.Assert;
-
 /**
  * Tests the {@link JarResourcesGenerator} class.
  *
@@ -92,7 +71,7 @@ public class JarResourcesGeneratorTest
 
         String actualText = generator.getDependenciesText();
 
-        Assert.assertEquals( expectedText, actualText );
+        assertEquals( expectedText, actualText );
 
         JarResourceGeneratorConfig jarResourceGeneratorConfig2 = new JarResourceGeneratorConfig( jarResources, "myLib", null, null, null );
         JarResourcesGenerator generator2  =
@@ -104,7 +83,7 @@ public class JarResourcesGeneratorTest
 
         String actualText2 = generator2.getDependenciesText();
 
-        Assert.assertEquals( expectedText2, actualText2 );
+        assertEquals( expectedText2, actualText2 );
 
     }
     
@@ -125,7 +104,7 @@ public class JarResourcesGeneratorTest
             String mainClass = "fully.qualified.ClassName";
 
             GeneratorTechnicalConfig generatorTechnicalConfig =
-                new GeneratorTechnicalConfig( mavenProject, resourceLoaderPath, "default-jnlp-win32-template.vm",
+                new GeneratorTechnicalConfig( mavenProject, resourceLoaderPath, "default-jnlp-nativelibs-template.vm",
                                               outputFile, templateFile.getName(), mainClass,
                                               "jar:file:/tmp/path/to/webstart-plugin.jar", "utf-8" );
             JarResourceGeneratorConfig jarResourceGeneratorConfig = new JarResourceGeneratorConfig( jarResources, null, null, null, null );
@@ -141,28 +120,33 @@ public class JarResourcesGeneratorTest
             ResolvedJarResource jarResource3 = buildJarResource( "groupId2", "artifactId2", "1.3", "win32", null, false, true );
             ResolvedJarResource jarResource4 = buildJarResource( "href3", "1.3", "win32", null, true, true );
             ResolvedJarResource jarResource5 = buildJarResource( "href4", "1.4", null, null, false, false );
+            ResolvedJarResource jarResource6 = buildJarResource( "groupId1", "artifactId3", "1.5", "win64", null, true, true );
 
             jarResources.add( jarResource1 );
             jarResources.add( jarResource2 );
             jarResources.add( jarResource3 );
             jarResources.add( jarResource4 );
             jarResources.add( jarResource5 );
+            jarResources.add( jarResource6 );
 
-            String expectedDependenciesText =EOL + "<jar href=\"href1\" version=\"1.1\" main=\"true\"/>" + EOL;
+            String expectedDependenciesText = EOL + "<jar href=\"href1\" version=\"1.1\" main=\"true\"/>" + EOL;
 
             String actualText = generator.getDependenciesText();
 
-            Assert.assertEquals( expectedDependenciesText, actualText );
+            assertEquals( expectedDependenciesText, actualText );
             
-            String expectedDependenciesNativeWin32Text =EOL + "<resources os=\"Windows\" arch=\"x86\">" + 
+            String expectedDependenciesNativeLibrariesText = "<resources os=\"Windows\" arch=\"x86\">" + 
             		EOL +"\t<nativelib href=\"artifactId1-win32.jar\" version=\"1.2\"/>" + 
             		EOL +"\t<nativelib href=\"artifactId2-1.3-win32.jar\"/>" + 
             		EOL +"\t<nativelib href=\"href3\" version=\"1.3\"/>" + 
+            		EOL + "</resources>" + 
+            		EOL + "<resources os=\"Windows\" arch=\"x86_64\">" +
+            		EOL +"\t<nativelib href=\"artifactId3-win64.jar\" version=\"1.5\"/>" + 
             		EOL + "</resources>" + EOL;
 
-            String actualNativeWin32Text = generator.getDependenciesNativeWin32Text();
+            String actualNativeLibrariesText = generator.getDependenciesNativeLibrariesText();
 
-            Assert.assertEquals( expectedDependenciesNativeWin32Text, actualNativeWin32Text );
+            assertEquals( expectedDependenciesNativeLibrariesText, actualNativeLibrariesText );
         }    
 
     private static ResolvedJarResource buildJarResource( final String hrefValue, final String version, final String classifier, final String mainClass,

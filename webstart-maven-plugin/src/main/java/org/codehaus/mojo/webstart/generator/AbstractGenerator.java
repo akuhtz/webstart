@@ -187,33 +187,12 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
 
     /**
      * Subclasses must implement this method to return the text that should 
-     * replace the {@code $dependenciesNativeWin32} placeholder in the JNLP template.
+     * replace the {@code $dependenciesNativeLibraries} placeholder in the JNLP template.
      * @return The dependencies text, never null.
      */
-    protected String getDependenciesNativeWin32Text()
+    protected String getDependenciesNativeLibrariesText()
     {
         //get the native win32 dependencies
-        return "";
-    }
-    
-    /**
-     * Subclasses must implement this method to return the text that should 
-     * replace the {@code $dependenciesNativeWin64} placeholder in the JNLP template.
-     * @return The dependencies text, never null.
-     */
-    protected String getDependenciesNativeWin64Text()
-    {
-        // get the native win64 dependencies
-        return "";
-    }
-    /**
-     * Subclasses must implement this method to return the text that should 
-     * replace the {@code $dependenciesNativeWinAmd64} placeholder in the JNLP template.
-     * @return The dependencies text, never null.
-     */
-    protected String getDependenciesNativeWinAmd64Text()
-    {
-        // get the native winAmd64 dependencies
         return "";
     }
     
@@ -228,9 +207,7 @@ public abstract class AbstractGenerator<C extends GeneratorExtraConfig>
         VelocityContext context = new VelocityContext();
 
         context.put( "dependencies", getDependenciesText() );
-        context.put( "dependenciesNativeWin32", getDependenciesNativeWin32Text() );
-        context.put( "dependenciesNativeWin64", getDependenciesNativeWin64Text( ) );
-        context.put( "dependenciesNativeWinAmd64", getDependenciesNativeWinAmd64Text( ) );
+        context.put( "dependenciesNativeLibraries", getDependenciesNativeLibrariesText() );
         
         context.put( "arguments", getArgumentsText() );
 
