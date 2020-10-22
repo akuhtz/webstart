@@ -203,35 +203,10 @@ public class DefaultArtifactUtil
     	
         if ( logger.isDebugEnabled() ) 
         {
-        	logger.debug( "Current resultArtifacts: " + resultArtifacts );
+        	logger.debug( "Current aritfacts of resolution result: " + result.getArtifacts() );
         }
-        
-    	Set<Artifact> resolveArtifacts = new LinkedHashSet<>();
-
-    	for ( Artifact artifact : result.getArtifacts() ) 
-    	{
-    		if (!resultArtifacts.contains(artifact)) 
-    		{
-    			logger.info("Add the new artifact to resolve transitively: " + artifact);
-    			resolveArtifacts.add(artifact);
-    		}
-    		else 
-    		{
-    			logger.debug( "The artifact was found in the resultArtifacts: " + artifact );
-    		}
-    	}
     	
         resultArtifacts.addAll( result.getArtifacts() );
-        
-        if ( logger.isDebugEnabled() ) 
-        {
-        	logger.debug( "Current transient artifacts to resolve: " + resolveArtifacts );
-        }
-        
-        for ( Artifact artifact : resolveArtifacts ) {
-        	resolve(resultArtifacts, siblingProjects, artifact, 
-        			localRepository, remoteRepositories, artifactFilter, managedVersions, resultArtifacts);
-        }
     }
 
     /**
