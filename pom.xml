@@ -10,7 +10,7 @@
 
   <groupId>org.codehaus.mojo</groupId>
   <artifactId>webstart</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>${revision}</version>
   <packaging>pom</packaging>
 
   <name>MWEBSTART :: Project</name>
@@ -103,6 +103,8 @@
   </distributionManagement>
 
   <properties>
+	<revision>1.0.0-SNAPSHOT</revision>
+  
     <mavenVersion>3.5.4</mavenVersion>
     <mavenPluginPluginVersion>3.6.0</mavenPluginPluginVersion>
     <keytoolVersion>1.5</keytoolVersion>
@@ -133,6 +135,17 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>webstart-jnlp-servlet</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>webstart-maven-plugin</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-artifact</artifactId>
@@ -306,6 +319,21 @@
   <build>
     <pluginManagement>
       <plugins>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-antrun-plugin</artifactId>
+			<version>1.8</version>
+		</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-checkstyle-plugin</artifactId>
+			<version>3.1.1</version>
+		</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-clean-plugin</artifactId>
+			<version>3.1.0</version>
+		</plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
@@ -316,6 +344,28 @@
 				<target>${maven.compiler.target}</target>
 			</configuration>
 		</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-deploy-plugin</artifactId>
+			<version>3.0.0-M1</version>
+		</plugin>
+		
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-install-plugin</artifactId>
+			<version>3.0.0-M1</version>
+		</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-jar-plugin</artifactId>
+			<version>3.2.0</version>
+		</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-resources-plugin</artifactId>
+			<version>3.1.0</version>
+		</plugin>
+		
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
@@ -341,6 +391,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>animal-sniffer-maven-plugin</artifactId>
+		  <version>1.16</version>
           <configuration>
             <signature>
               <groupId>org.codehaus.mojo.signature</groupId>
@@ -354,9 +405,15 @@
           <artifactId>plexus-component-metadata</artifactId>
           <version>1.5.5</version>
         </plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-site-plugin</artifactId>
+			<version>3.9.1</version>
+		</plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-scm-publish-plugin</artifactId>
+		  <version>3.0.0</version>
           <configuration>
             <content>${project.build.directory}/staging/${project.artifactId}</content>
           </configuration>
@@ -379,9 +436,44 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.22.2</version>
         </plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-enforcer-plugin</artifactId>
+			<version>3.0.0-M2</version>
+        </plugin>
+		<plugin>
+			<groupId>org.codehaus.mojo</groupId>
+			<artifactId>flatten-maven-plugin</artifactId>
+			<version>1.1.0</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
+		<plugin>
+			<groupId>org.codehaus.mojo</groupId>
+			<artifactId>flatten-maven-plugin</artifactId>
+			<configuration>
+				<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				<updatePomFile>true</updatePomFile>
+			</configuration>
+			<executions>
+				<execution>
+					<id>flatten</id>
+					<phase>process-resources</phase>
+					<goals>
+						<goal>flatten</goal>
+					</goals>
+				</execution>
+				<execution>
+					<id>flatten.clean</id>
+					<phase>clean</phase>
+					<goals>
+						<goal>clean</goal>
+					</goals>
+				</execution>
+			</executions>
+		</plugin>
+	
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
