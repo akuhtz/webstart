@@ -260,6 +260,14 @@ public abstract class AbstractBaseJnlpMojo
     @Parameter( property = "jnlp.outputJarVersions", defaultValue = "false" )
     private boolean outputJarVersions;
     
+    /**
+     * Skip the execution.
+     * 
+     * @since 1.0.0
+     */
+    @Parameter( property = "webstart.maven.plugin.skip", defaultValue = "false" )
+    private boolean skip;
+
     
     // ----------------------------------------------------------------------
     // Components
@@ -573,6 +581,16 @@ public abstract class AbstractBaseJnlpMojo
     protected boolean isExcludeTransitive()
     {
         return this.excludeTransitive;
+    }
+    
+    /**
+     * Check if the execution should be skipped
+     *
+     * @return true to skip
+     */
+    protected boolean isSkip()
+    {
+        return skip;
     }
 
     /**

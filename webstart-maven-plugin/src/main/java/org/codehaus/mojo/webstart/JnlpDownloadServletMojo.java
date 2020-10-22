@@ -129,7 +129,13 @@ public class JnlpDownloadServletMojo
     public void execute()
             throws MojoExecutionException, MojoFailureException
     {
-
+    	
+    	if ( isSkip() )
+        {
+            getLog().info( "skipping execute as per configuration" );
+            return;
+        }
+    	
         // ---
         // Check configuration and get all configured jar resources
         // ---
