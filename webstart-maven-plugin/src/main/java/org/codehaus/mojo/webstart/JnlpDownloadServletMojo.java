@@ -31,6 +31,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.filter.AndArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
+import org.apache.maven.artifact.resolver.filter.ExcludesArtifactFilter;
+import org.apache.maven.artifact.resolver.filter.IncludesArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -38,6 +40,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.mojo.webstart.AbstractJnlpMojo.Dependencies;
 import org.codehaus.mojo.webstart.generator.GeneratorTechnicalConfig;
 import org.codehaus.mojo.webstart.generator.JarResourceGeneratorConfig;
 import org.codehaus.mojo.webstart.generator.JarResourcesGenerator;
@@ -76,6 +79,40 @@ public class JnlpDownloadServletMojo
     // ----------------------------------------------------------------------
     // Mojo Parameters
     // ----------------------------------------------------------------------
+    
+    /**
+     * Represents the configuration element that specifies which of the current
+     * project's dependencies will be included or excluded from the resources element
+     * in the generated JNLP file.
+     */
+    public static class Dependencies
+    {
+
+        private List<String> includes;
+
+        private List<String> excludes;
+
+        public List<String> getIncludes()
+        {
+            return includes;
+        }
+
+        public void setIncludes( List<String> includes )
+        {
+            this.includes = includes;
+        }
+
+        public List<String> getExcludes()
+        {
+            return excludes;
+        }
+
+        public void setExcludes( List<String> excludes )
+        {
+            this.excludes = excludes;
+        }
+    }
+
 
     /**
      * The name of the directory into which the jnlp file and other
@@ -100,6 +137,14 @@ public class JnlpDownloadServletMojo
      */
     @Parameter( required = true )
     private List<JnlpFile> jnlpFiles;
+    
+    /**
+     * [optional] transitive dependencies filter - if omitted, the plugin will include all transitive dependencies.
+     * Provided and test scope dependencies are always excluded.
+     */
+    @Parameter
+    private Dependencies dependencies;
+
 
     /**
      * The configurable collection of jars that are common to all jnlpFile elements declared in
@@ -537,6 +582,16 @@ public class JnlpDownloadServletMojo
 	            artifactFilter.add( new ScopeArtifactFilter( Artifact.SCOPE_RUNTIME ) );
 	            // do not add optional artifacts
 	            artifactFilter.add( new NotOptionalFilter() );
+	            
+	            // TODO add the dependencies excludes and includes
+	            if ( dependencies != null && dependencies.getIncludes() != null && !dependencies.getIncludes().isEmpty() )
+	            {
+	            	artifactFilter.add( new IncludesArtifactFilter( dependencies.getIncludes() ) );
+	            }
+	            if ( dependencies != null && dependencies.getExcludes() != null && !dependencies.getExcludes().isEmpty() )
+	            {
+	            	artifactFilter.add( new ExcludesArtifactFilter( dependencies.getExcludes() ) );
+	            }
 	
 	            // this causes problems if the pom contains dependencies
 	            // restricts to not pom dependencies
