@@ -181,5 +181,14 @@ public class JnlpFile
     {
         this.arguments = arguments;
     }
+    
+    
+    public String toString() 
+    {
+    	StringBuilder sb = new StringBuilder("JnlpFile[ templateFilename='");
+    	sb.append( templateFilename ).append("', outputFilename='").append(outputFilename);
+    	sb.append("', mainClass='").append(mainClass).append("' ]");
+    	return sb.toString();
+    }
 
 }

@@ -1,11 +1,14 @@
 package org.codehaus.mojo.webstart;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +34,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.filter.AndArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.ExcludesArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.IncludesArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ScopeArtifactFilter;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -40,7 +42,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.mojo.webstart.AbstractJnlpMojo.Dependencies;
 import org.codehaus.mojo.webstart.generator.GeneratorTechnicalConfig;
 import org.codehaus.mojo.webstart.generator.JarResourceGeneratorConfig;
 import org.codehaus.mojo.webstart.generator.JarResourcesGenerator;
@@ -569,6 +570,13 @@ public class JnlpDownloadServletMojo
 
         if ( !isExcludeTransitive() )
         {
+            // TODO Prepare the artifact filter to check whether to add the dependencies excludes and includes
+            final AndArtifactFilter artifactFilterExcludesIncludes = new AndArtifactFilter();
+            if ( dependencies != null && dependencies.getExcludes() != null && !dependencies.getExcludes().isEmpty() )
+            {
+            	artifactFilterExcludesIncludes.add(prepareExcludesArtifactFilter( dependencies.getExcludes() ) );
+            }
+
         	// process all project artifacts
         	
         	for ( Artifact projectArtifact : artifacts ) 
@@ -583,14 +591,10 @@ public class JnlpDownloadServletMojo
 	            // do not add optional artifacts
 	            artifactFilter.add( new NotOptionalFilter() );
 	            
-	            // TODO add the dependencies excludes and includes
+	            // TODO add the dependencies includes
 	            if ( dependencies != null && dependencies.getIncludes() != null && !dependencies.getIncludes().isEmpty() )
 	            {
 	            	artifactFilter.add( new IncludesArtifactFilter( dependencies.getIncludes() ) );
-	            }
-	            if ( dependencies != null && dependencies.getExcludes() != null && !dependencies.getExcludes().isEmpty() )
-	            {
-	            	artifactFilter.add( new ExcludesArtifactFilter( dependencies.getExcludes() ) );
 	            }
 	
 	            // this causes problems if the pom contains dependencies
@@ -615,7 +619,13 @@ public class JnlpDownloadServletMojo
 	                    getLog().info("Skip adding the transitive dependency because it's of type 'pom': "+resolvedArtifact.getId());
 	                    continue;
 	                }
-	
+	                
+	                if ( !artifactFilterExcludesIncludes.include(resolvedArtifact) ) {
+	                	getLog().info( "The artifact for the jarResource is excluded from processing: " + newJarResource );
+	                	
+	                	continue;
+	                }
+
 	                // if SNAPSHOT and maven 3 there might be a unique version resolved ...
 	                if (resolvedArtifact.isSnapshot()) {
 	                    getLog().info("The current artifact is a snapshot version. Set the base version as artifact version: " + resolvedArtifact.getBaseVersion());
@@ -626,6 +636,10 @@ public class JnlpDownloadServletMojo
 	                {
 	                    getLog().info( "Add jarResource (transitive): " + newJarResource );
 	                    collectedJarResources.add( newJarResource );
+	                }
+	                else 
+	                {
+	                	getLog().debug( "The resolved jarResource (transitive) is collected already: " + newJarResource );
 	                }
 	            }
         	}
@@ -639,7 +653,7 @@ public class JnlpDownloadServletMojo
         for ( ResolvedJarResource jarResource : collectedJarResources )
         {
             Artifact artifact = jarResource.getArtifact();
-
+            
             String filenameWithVersion =
                     getDependencyFilenameStrategy().getDependencyFilename( artifact, false, isUseUniqueVersions() );
 
@@ -672,6 +686,27 @@ public class JnlpDownloadServletMojo
 			return !artifact.isOptional();
 		}
     	
+    }
+    
+    protected ExcludesArtifactFilter prepareExcludesArtifactFilter(List<String> dependencyExcludes) {
+    	List<String> excludes = new ArrayList<>();
+    	String patternString = "([^:]+):([^:]+):([^:]+)";
+    	Pattern pattern = Pattern.compile(patternString);
+    	
+    	for (String exclude : dependencyExcludes) {
+
+        	Matcher matcher = pattern.matcher(exclude);
+            boolean matches = matcher.matches();
+            if (!matches) {
+            	excludes.add(exclude + ":");
+            }
+            else {
+            	excludes.add(exclude);
+            }
+    	}
+    	
+    	return new ExcludesArtifactFilter( excludes );
+
     }
 
     private void generateJnlpFile( ResolvedJnlpFile jnlpFile, String libPath )

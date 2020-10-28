@@ -695,7 +695,7 @@ public abstract class AbstractBaseJnlpMojo
         }
         else
         {
-            getLog().debug(
+            getLog().info(
                     "Source file hasn't changed. Do not reprocess " + signedTargetFile + " with " + sourceFile + "." );
         }
 
