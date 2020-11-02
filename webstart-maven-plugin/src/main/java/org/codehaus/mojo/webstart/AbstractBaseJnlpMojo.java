@@ -1,5 +1,21 @@
 package org.codehaus.mojo.webstart;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -35,23 +51,13 @@ import org.codehaus.mojo.webstart.sign.SignTool;
 import org.codehaus.mojo.webstart.util.ArtifactUtil;
 import org.codehaus.mojo.webstart.util.IOUtil;
 import org.codehaus.mojo.webstart.util.JarUtil;
+import org.codehaus.plexus.archiver.ArchiverException;
+import org.codehaus.plexus.archiver.UnArchiver;
+import org.codehaus.plexus.archiver.jar.JarArchiver;
+import org.codehaus.plexus.archiver.manager.ArchiverManager;
+import org.codehaus.plexus.archiver.manager.NoSuchArchiverException;
+import org.codehaus.plexus.util.FileUtils;
 import org.sonatype.plexus.components.sec.dispatcher.SecDispatcher;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The superclass for all JNLP generating MOJOs.
@@ -269,6 +275,14 @@ public abstract class AbstractBaseJnlpMojo
     private boolean skip;
 
     
+    /**
+     * Remove the INDEX.LIST from JARs.
+     * 
+     * @since 1.0.0
+     */
+	@Parameter( property = "webstart.maven.plugin.removeIndexList", defaultValue = "true" )
+    private boolean removeIndexList;
+
     // ----------------------------------------------------------------------
     // Components
     // ----------------------------------------------------------------------
@@ -329,6 +343,13 @@ public abstract class AbstractBaseJnlpMojo
      */
     @Component( hint = "mng-4384" )
     private SecDispatcher securityDispatcher;
+    
+    /**
+     * archiver manager.
+     * @since 1.0.0
+     */
+    @Component
+    private ArchiverManager archiverManager;
 
     // ----------------------------------------------------------------------
     // Fields
@@ -692,6 +713,16 @@ public abstract class AbstractBaseJnlpMojo
         {
             getIoUtil().copyFile( sourceFile, unsignedTargetFile );
 
+            
+            // remove the INDEX.LIST from the unsigned target file
+            try 
+            {
+                removeIndexListFromJarFile(unsignedTargetFile, getWorkDirectory());
+            } 
+            catch (MojoExecutionException e) 
+            {
+                getLog().error("Remove the INDEX.LIST from the usigned target file failed.", e);
+            }
         }
         else
         {
@@ -1105,4 +1136,166 @@ public abstract class AbstractBaseJnlpMojo
         return new File( source.getParentFile(), targetFilename );
     }
 
+    
+    private FileFilter removeINDEXFileFilter = new FileFilter() {
+        
+        public boolean accept(File file) {
+            return ("INDEX.LIST".equals(file.getName()));
+        }
+
+    };
+    
+    private static final long FILE_SIZE_20_MB = 20 * 1024 * 1024;
+    
+    protected void removeIndexListFromJarFile( File jarFile, File tempDir ) throws MojoExecutionException
+    {
+        
+        if (!removeIndexList) {
+            getLog().info("Remove INDEX.LIST from JARs is not enabled.");
+            return;
+        }
+        
+        getLog().info("removeIndexListFromJarFile, jarFile: " + jarFile);
+        
+        if (jarFile.length() > FILE_SIZE_20_MB) 
+        {
+            getLog().warn(
+                    "removeIndexListFromJarFile is skipped because max file size exceeded, jarFile: " + jarFile
+                            + ", size: " + jarFile.length());
+            return;
+        }
+
+        String archiveExt = FileUtils.getExtension( jarFile.getAbsolutePath() ).toLowerCase();
+        
+        // create temp dir
+        File tempDirUnpacked = new File( tempDir, "temp_unpacked_jar" );
+        ioUtil.removeDirectory( tempDirUnpacked );
+
+        try {
+            // recreate temp dir
+        	try 
+        	{
+        		ioUtil.makeDirectoryIfNecessary( tempDirUnpacked );
+        	}
+        	catch (MojoExecutionException ex) {
+        		throw new MojoExecutionException( "Error creating temporary unpack directory.", ex);
+			}
+
+            // FIXME we probably want to be more security conservative here. 
+            // it's very easy to guess where the directory will be and possible 
+            // to access/change its contents before the file is rejared..
+            
+            // extract jar into temporary directory
+            try 
+            {
+                UnArchiver unArchiver = this.archiverManager.getUnArchiver( archiveExt );
+                unArchiver.setSourceFile( jarFile );
+                unArchiver.setDestDirectory( tempDirUnpacked );
+                unArchiver.extract();            
+            } 
+            catch ( ArchiverException ex)  
+            {
+                throw new MojoExecutionException( "Error unpacking file: " + jarFile + "to: " + tempDirUnpacked, ex );            
+            } 
+            catch ( NoSuchArchiverException ex ) 
+            {
+                throw new MojoExecutionException( "Error acquiring unarchiver for extension: " + archiveExt, ex );
+            }
+            
+            // create and check META-INF directory
+            File metaInf = new File( tempDirUnpacked, "META-INF" );
+            if ( !metaInf.isDirectory() ) 
+            {
+                verboseLog( "META-INT dir not found : nothing to do for file: " + jarFile.getAbsolutePath() );
+                return;
+            }
+            
+            // filter signature files and remove them
+            File[] filesToRemove = metaInf.listFiles( this.removeINDEXFileFilter );                
+            if ( filesToRemove.length == 0 ) 
+            {
+                verboseLog( "no files match " + "INDEX.LIST" + " : nothing to do for file: " + jarFile.getAbsolutePath() );
+                return;
+            }                
+            
+            for ( int i = 0; i < filesToRemove.length; i++ ) 
+            {
+                if ( !filesToRemove[i].delete() ) 
+                {
+                    throw new MojoExecutionException( "Error removing signature file: " + filesToRemove[i] );
+                }
+                verboseLog("remove file :" + filesToRemove[i]);
+            }
+            
+            // recreate archive
+            try 
+            {
+                File manifestFile = new File(tempDirUnpacked+"/META-INF/MANIFEST.MF");
+                getLog().info("Check for exisiting manifest: " + manifestFile.exists());
+                            	
+                JarArchiver jarArchiver = (JarArchiver) this.archiverManager.getArchiver( "jar" );
+                jarArchiver.setUpdateMode( true );
+                if (manifestFile.exists()) {
+                    jarArchiver.setManifest(manifestFile);
+                }
+                else {
+                    getLog().info("No exisiting manifest available for : " + jarFile.getAbsolutePath());
+                }
+                jarArchiver.addDirectory( tempDirUnpacked );
+                jarArchiver.setDestFile( jarFile );
+                jarArchiver.createArchive();
+                
+            } 
+            catch ( ArchiverException ex ) 
+            {
+                throw new MojoExecutionException( "Error packing directory: " + tempDirUnpacked + "to: " + jarFile, ex );
+            } 
+            catch ( IOException ex ) 
+            {
+                throw new MojoExecutionException( "Error packing directory: " + tempDirUnpacked + "to: " + jarFile, ex );
+            } 
+            catch ( NoSuchArchiverException ex ) 
+            {
+                throw new MojoExecutionException( "Error acquiring archiver for extension: jar", ex );
+            }
+
+        }
+        finally 
+        {
+            int retryCount = 0;
+            do {        	
+	            try 
+	            {
+	                getLog().info("Try to delete directory: "+ tempDirUnpacked);
+	                FileUtils.deleteDirectory( tempDirUnpacked );
+	                getLog().info("Delete directory passed: "+ tempDirUnpacked);
+	                // leave the loop
+	                break;
+	            } 
+	            catch ( IOException ex ) 
+	            {
+	                getLog().warn("Delete directory failed: "+ tempDirUnpacked);
+	                if (retryCount >= 5) 
+	                {
+	                	throw new MojoExecutionException( "Error cleaning up temporary directory file: " + tempDirUnpacked, ex );
+	                }
+	                else 
+	                {
+	                    // wait a bit
+	                    getLog().info("Wait a second before try to delete the directory again.");
+	                    try {
+	                        Thread.sleep(1000L);
+	                    } 
+	                    catch (InterruptedException e) {
+	                        getLog().warn("Wait before try to delete directory again is interrupted.", e);
+	                        break;
+	                    }
+	                }
+	            }
+	        }
+	        while (retryCount < 5);
+            
+            getLog().info("removeIndexListFromJarFile finished, jarFile: " + jarFile);
+        }
+    }
 }
